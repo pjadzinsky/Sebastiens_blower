@@ -1,0 +1,6 @@
+*.pyc
+CALIBRATION*
+VALIDATION*
+BLOWER_DATA*
+*.txt
+
