@@ -12,7 +12,8 @@ def main():
 	d.set(SETTING)
 	d.run(device, init=V_GUESS)
 
-	flows = [0, 20, 35, 50, 65, 80, 100, 120, 140, 170, 200, 230, 260, 290, 320]
+	flows = range(0,321,32)
+	#flows = [0, 20, 35, 50, 65, 80, 100, 120, 140, 170, 200, 230, 260, 290, 320]
 
 	cal_name = 'CALIBRATION_LOG_{0}'.format(int(time())) 
 	for setting in flows:
@@ -20,7 +21,7 @@ def main():
 		d.set(setting)
 		with open(cal_name, 'a', 0) as logfile:
 			logfile.write("%f %f\n" % (time(), setting))
-		sleep(60*20)
+		sleep(60*30)
 
 	''' Finishing '''
 	with open(cal_name, 'a', 0) as logfile:

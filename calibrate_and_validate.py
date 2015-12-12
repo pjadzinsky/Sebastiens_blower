@@ -1,13 +1,11 @@
 #!/usr/bin/python
 import calibrate
 import validate
+import validate_for_plot
 import shutoff
 
 from time import sleep
 
 if __name__=='__main__':
-	calibrate.main()
-	sleep(60*10)
 	validate.main()
-	sleep(60*10)
-	shutoff.main()
+	validate_for_plot.main()
