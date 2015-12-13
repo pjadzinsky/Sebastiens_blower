@@ -18,11 +18,13 @@ import pandas as pd
 import glob
 
 def main(rack):
+    ''' rack: mus.Rack object '''
     os.environ['APP_ENV'] = 'production'
     os.environ['MOUSERA_API_TOKEN'] = '586e0fc8f9d0df903146d6784718eb18babfac0b'
     mc = MetricClient()
 
     direction = 'in'
+    METRICS = ['airflow.heated_temperature.%s' % direction, 'airflow.heat.%s' % direction]
 
     intervals = load_rack_conditions(rack)
 
@@ -36,7 +38,6 @@ def main(rack):
 
     data = {}
     data_check = {}
-    METRICS = ['airflow.heated_temperature.%s' % direction, 'airflow.heat.%s' % direction]
     for mac in front_macs:
         print 'getting data for', mac
         ds = get_metrics(mac, METRICS, intervals[0][0], intervals[-1][0]+60*20)
@@ -124,24 +125,25 @@ def get_front_macs(rack, t0):
     return map(lambda s: s.get_mac_address(), slabs)
     """
 
-def get_metrics(slab, *args):
-    cachename = 'cache/%s' % slab
+def get_metrics(mac, *args):
+    cachename = 'cache/%s' % mac
     try:
         if BYPASS_CACHE:
             raise Exception ()
         return eval(file(cachename).read())
     except:
         print 'not cached; retrieving'
-        result = mc.get_metrics(slab, *args)
+        result = mc.get_metrics(mac, *args)
         with open(cachename, 'w+') as cache:
             cache.write(result.__repr__())
         return result
 
 
-def get_decay(slab, interval):
-    (heat_data, h_temp_data) = data[slab]
+def get_decay(mac, interval):
+    (heat_data, h_temp_data) = data[mac]
     (time, _) = interval
     # use last event more than 1 decay length (+ 1s margin) from end of airflow interval
+    """ why 18 in next line? is it 18 minutes? """
     event = [t for (t,_) in heat_data if t < time + 60*18 - 1][-1]
     decay = list(takewhile( lambda (t,_): t <= event + 60*2
                                         , dropwhile( lambda (t,_): t < event + 5 + 3 # heat + roundoff
