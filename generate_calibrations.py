@@ -10,10 +10,9 @@ import os
 
 from itertools import *
 from common.metrics.metric_client import MetricClient
-from sdk.mus import *
+from sdk import mus
 from numpy import *
 from scipy.optimize import *
-from functools import *
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
@@ -31,41 +30,40 @@ def main(rack):
 
     BYPASS_CACHE = False
 
-    slabs = partial(get_front_slabs, rack)
+    start_time = intervals[0][0]
 
-    print 'got %d slabs:' % len(slabs)
-    print slabs
+    front_macs = get_front_macs(rack, start_time)
 
     data = {}
     data_check = {}
     METRICS = ['airflow.heated_temperature.%s' % direction, 'airflow.heat.%s' % direction]
-    for slab in slabs:
-        print 'getting data for', slab
-        ds = get_metrics(slab, METRICS, intervals[0][0], intervals[-1][0]+60*20)
+    for mac in front_macs:
+        print 'getting data for', mac
+        ds = get_metrics(mac, METRICS, intervals[0][0], intervals[-1][0]+60*20)
 
         [h_temp_data, heat_data] = [[d for d in ds if d['metric_name'] == m] for m in METRICS]
 
         h_temps = sorted([(t/1000., x) for (t, x) in h_temp_data[0]['values']])
         heats   = sorted([(t/1000., x) for (t, x) in heat_data[0]['values']])
-        data[slab] = (heats, h_temps)
-        data_check[slab] = (len(heats), len(h_temps))
+        data[mac] = (heats, h_temps)
+        data_check[mac] = (len(heats), len(h_temps))
 
     print data_check
 
     timeconsts = {}
-    for slab in slabs:
-        timeconsts[slab] = []
+    for mac in front_macs:
+        timeconsts[mac] = []
         for interval in intervals:
             (_, airflow) = interval
-            decay = get_decay(slab, interval)
+            decay = get_decay(mac, interval)
             timeconst = process_decay(decay)
-            timeconsts[slab].append( (timeconst, airflow) )
+            timeconsts[mac].append( (timeconst, airflow) )
 
     print timeconsts
 
     calibrations = {}
-    for slab in slabs:
-        calibrations[slab] = process_timeconsts(timeconsts[slab])
+    for mac in macs:
+        calibrations[mac] = process_timeconsts(timeconsts[mac])
 
     print calibrations
 
@@ -84,7 +82,7 @@ def load_rack_conditions(rack):
     average. The condition ends when the next one (next row) starts
     '''
     intervals = []
-    path = os.path.expanduser('~/data/Airflow/raw/Rack {0}/'.format(rack))
+    path = os.path.expanduser('~/data/Airflow/raw/Rack {0}/'.format(rack.id()))
 
     blower_data = pd.read_csv(os.path.join(path, 'BLOWER_DATA'), names=[
         'time_sec', 'voltage', 'flow'], sep=' ')
@@ -112,14 +110,19 @@ def load_rack_conditions(rack):
 
     return intervals
 
-def get_front_slabs(rack):
-    slabs = []
-    for slot in Rack(rack).slots():
+def get_front_macs(rack, t0):
+    slots = rack.slots()
+    slots = [s for s in slots if s.as_str()[0]!='Z'] # some rack slots are not related to cages, they start with 'Z'
+    slabs = [s.slab_at_time(t0) for s in slots]
+    macs = [s.mac_front() for s in slabs]
+    return macs
+    """
+    for slot in rack.slots():
         for device in slot.current_devices():
             if device.is_gen2_slab_front():
                 slabs.append(device)
     return map(lambda s: s.get_mac_address(), slabs)
-
+    """
 
 def get_metrics(slab, *args):
     cachename = 'cache/%s' % slab
@@ -177,7 +180,6 @@ def process_timeconsts(points):
     return list(popt)
 
 if __name__=='__main__':
-    global rack
     if len(sys.argv) != 2:
         raise ValueError("""
         parameter rack number is needed
@@ -187,4 +189,12 @@ if __name__=='__main__':
 
 
     rack = sys.argv[1]
+    try:
+        rack = int(rack)
+    except:
+        raise ValueError("rack has to be an integer")
+
+    print rack, type(rack)
+    rack = mus.Rack(rack)
+    print rack, type(rack)
     main(rack)
