@@ -1,0 +1,4 @@
+- fail: msg="Verify we have an 'env' argument.  Bailing out if not."
+  when: env is not defined
+
+

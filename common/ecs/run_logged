@@ -1,0 +1,22 @@
+#!/bin/bash
+
+APPNAME=${1:-'0'}
+COMMAND=${2:-'0'}
+
+[ "${APPNAME}" == '0' ] && { echo "ERROR: App Name is required"; exit 1; }
+[ "${COMMAND}" == '0' ] && { echo "ERROR: Command is required"; exit 1; }
+
+if [[ -x /etc/init.d/rsyslog ]];
+then
+    /etc/init.d/rsyslog start
+else
+    echo "Warn: Logging not enabled; rsyslog missing." 1>&2
+fi
+
+${COMMAND} 2>&1 | /usr/bin/logger -t ${APP_ENV:-"staging"}-${APPNAME} -s
+
+EXIT_STATUS=${PIPESTATUS[0]} # get the exit status of COMMAND not logger
+echo RUNLOGGED EXIT $EXIT_STATUS | /usr/bin/logger -t ${APP_ENV:-"staging"}-${APPNAME} -s
+
+
+ 

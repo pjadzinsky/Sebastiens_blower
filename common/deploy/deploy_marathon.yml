@@ -1,0 +1,20 @@
+id: null
+cpus        :  1
+mem         : 512.0
+instances   : 1
+# labels :
+#    priority: 2
+constraints :
+    - [site, LIKE, aws-us-west-1]
+uris        :
+    - "file:///root/.dockercfg"
+env:
+    AWS_DEFAULT_REGION : "us-west-1"
+    APP_ENV : null
+container :
+    type : DOCKER
+    docker :
+        image : null
+        network : HOST
+        privileged : true
+

@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+# The Bash shell script executes a command with a time-out.
+# Upon time-out expiration SIGTERM (15) is sent to the process. If the signal
+# is blocked, then the subsequent SIGKILL (9) terminates it.
+#
+# Based on the Bash documentation example.
+# Based on post by Dmitry V Golovashkin <Dmitry.Golovashkin@sas.com>
+# Update to include jitter feature
+
+scriptName="${0##*/}"
+
+declare -i DEFAULT_TIMEOUT=7200 
+declare -i DEFAULT_TIMEOUT_JITTER=3600
+declare -i DEFAULT_INTERVAL=300
+declare -i DEFAULT_DELAY=20
+
+# Timeout after this many seconds.
+declare -i timeout=DEFAULT_TIMEOUT
+# Randomly sample jitter 
+declare -i timeout_jitter=DEFAULT_TIMEOUT_JITTER
+# Interval between checks if the process is still alive.
+declare -i interval=DEFAULT_INTERVAL
+# Delay between posting the SIGTERM signal and destroying the process by SIGKILL.
+declare -i delay=DEFAULT_DELAY
+
+function printUsage() {
+    cat <<EOF
+
+Synopsis
+    $scriptName [-t timeout] [-j jitter] [-i interval] [-d delay] command
+    Execute a command with a time-out (i.e. ensure it dies at some time).
+    Upon time-out expiration SIGTERM (15) is sent to the process. If SIGTERM
+    signal is blocked, then the subsequent SIGKILL (9) terminates it.
+
+    -t timeout
+        Number of seconds to wait for command completion.
+        Default value: $DEFAULT_TIMEOUT seconds.
+
+    -j jitter
+        Number of seconds to randmonly sample an additional timeout jitter.
+        Default value: $DEFAULT_TIMEOUT_JITTER seconds. Must be >= 1
+
+    -i interval
+        Interval between checks if the process is still alive.
+        Positive integer, default value: $DEFAULT_INTERVAL seconds.
+
+    -d delay
+        Delay between posting the SIGTERM signal and destroying the
+        process by SIGKILL. Default value: $DEFAULT_DELAY seconds.
+
+As of today, Bash does not support floating point arithmetic (sleep does),
+therefore all delay/time values must be integers.
+EOF
+}
+
+# Options.
+while getopts ":t:j:i:d:" option; do
+    case "$option" in
+        t) timeout=$OPTARG ;;
+        j) timeout_jitter=$OPTARG ;;
+        i) interval=$OPTARG ;;
+        d) delay=$OPTARG ;;
+        *) printUsage; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# $# should be at least 1 (the command to execute), however it may be strictly
+# greater than 1 if the command itself has options.
+if (($# == 0 || interval <= 0)); then
+    printUsage
+    exit 1
+fi
+
+if ((timeout_jitter < 1)); then
+    printUsage
+    exit 1
+fi
+
+if (($$ == 1)); then
+    echo "Error: Mortalize does not work if launched as PID 1."
+    exit 1
+fi
+
+# kill -0 pid   Exit code indicates if a signal may be sent to $pid process.
+(
+    ((t = timeout + $[ RANDOM % timeout_jitter ]))
+    echo "MORTALIZE: This task bounded to $t seconds."
+    while ((t > 0)); do
+        sleep $interval
+        kill -0 $$ || exit 0
+        ((t -= interval))
+        cur_time=$(date -u)
+        echo "[$cur_time] MORTALIZE TTL for PID $$: $t seconds"
+    done
+
+    # Be nice, post SIGTERM first.
+    # The 'exit 0' below will be executed if any preceeding command fails.
+    cur_time=$(date -u)
+    echo "[$cur_time] MORTALIZE Sending SIGTERM to PID $$"
+    kill -s SIGTERM $$ && kill -0 $$ || exit 0
+    cur_time=$(date -u)
+    echo "[$cur_time] MORTALIZE Waiting for cleanup..."
+    sleep $delay
+    cur_time=$(date -u)
+    echo "[$cur_time] MORTALIZE Sending SIGKILL to PID $$"
+    kill -s SIGKILL $$
+    cur_time=$(date -u)
+    echo "[$cur_time] MORTALIZE Has sent SIGKILL to PID $$"
+) 2> /dev/null &
+
+exec "$@"

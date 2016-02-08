@@ -1,0 +1,15 @@
+- include:      verify_base_options.yml
+- debug: msg="pwd_root {{ project_root }}"
+- include_vars: "{{ project_root }}/common/ansible/envs/common"
+
+- stat:    path="{{ ansible_env.PWD}}/envs/common"
+  register: st
+- include_vars: "{{ ansible_env.PWD}}/envs/common"
+  when: st.stat.exists
+
+- include_vars: "{{ project_root }}/common/ansible/envs/{{env}}"
+
+- stat:    path="{{ ansible_env.PWD}}/envs/{{env}}"
+  register: st
+- include_vars: "{{ ansible_env.PWD}}/envs/{{env}}"
+  when: st.stat.exists

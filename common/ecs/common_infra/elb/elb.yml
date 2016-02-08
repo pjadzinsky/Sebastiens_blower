@@ -1,0 +1,71 @@
+---
+
+
+- name: ELB security group creation
+  hosts: localhost
+  connection: local
+  tasks:
+    - ec2_group:
+        name: "{{elb_name}}-{{consumer}}-{{env}}"
+        description: Governs port access to Kairos ELB instances
+        vpc_id: "{{vpc_id}}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "{{vpc_cidr_block}}"
+        rules_egress:
+          - proto: tcp
+            from_port: "{{backend_http_port}}"
+            to_port: "{{backend_http_port}}"
+            cidr_ip: "{{vpc_cidr_block}}"
+      register: elb_sg
+    - debug: msg="elb_sg - {{elb_sg}}"
+
+- name: create ELB for Kairos
+  hosts: localhost
+  connection: local
+  tasks:
+    - ec2_elb_lb:
+        name: "{{elb_name}}-{{consumer}}-{{env}}"
+        scheme: internal
+        state: present
+        subnets:
+          - "{{app_subnets|first}}"
+        listeners:
+          - protocol: http
+            load_balancer_port: 80
+            instance_protocol: http
+            instance_port: "{{backend_http_port}}"
+
+        #cross_az_load_balancing: "no"
+        health_check:
+          ping_protocol: tcp
+          ping_port: "{{backend_http_port}}"
+          response_timeout: 5 # seconds
+          interval: 30 # seconds
+          unhealthy_threshold: 2
+          healthy_threshold: 2
+        security_group_ids: [ "{{elb_sg.group_id}}"]
+      register: elb
+    - debug: var=elb
+
+#ugh no support for stickiness settings in ansible!!!!?!!?!?!!?!
+- name: set the stickiness policy
+  hosts: localhost
+  connection: local
+  tasks:
+    - shell: aws elb describe-load-balancer-policies --load-balancer-name {{elb.elb.name}}  --policy-name KairosStickyPolicy
+      register: query_lb_policy
+      ignore_errors: true
+      environment:
+        AWS_DEFAULT_REGION: "{{aws_default_region}}"
+    - shell: aws elb create-lb-cookie-stickiness-policy --load-balancer-name {{elb.elb.name}} --policy-name KairosStickyPolicy
+      when: query_lb_policy.rc != 0
+      environment:
+        AWS_DEFAULT_REGION: "{{aws_default_region}}"
+    - shell: aws elb set-load-balancer-policies-of-listener  --load-balancer-name {{elb.elb.name}} --load-balancer-port 80 --policy-names KairosStickyPolicy
+      environment:
+        AWS_DEFAULT_REGION: "{{aws_default_region}}"
+
+#ugh no support in ansible yet for alias records... and no support for ELB aliases with private hosted zones.... forgoing for now

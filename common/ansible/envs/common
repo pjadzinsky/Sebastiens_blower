@@ -1,0 +1,42 @@
+aws_region: us-west-1
+
+r53_private_zone: mousera-private-production.com
+r53_public_zone:  mousera.com
+mesos_master_domain_name: mesos.{{r53_private_zone}}
+marathon_domain_name: marathon.{{r53_private_zone}}
+
+#spit out all this vpc stuff from the other script, placeholder for dev
+vpc_id: vpc-9edf21fb
+
+public_subnets:
+  - subnet-0817004e
+  - subnet-1711c672
+
+app_subnets:
+  - subnet-0917004f
+  - subnet-1611c673
+
+db_subnets:
+  - subnet-16170050
+  - subnet-1111c674
+
+vpc_cidr_block: 10.201.0.0/16
+vivarium1_cidr_block: 10.24.0.0/16
+
+base_ami_id: ami-71adbb34
+
+mesos_master_instance_type: m3.medium
+mesos_slave_instance_type: c3.4xlarge
+
+marathon_version: 0.7.6
+
+zookeeper_client_port: "2181"
+
+cluster_ec2_key: mesos-cluster-production
+
+docker_repo: https://index.docker.io/v1/
+docker_repo_email: services@mousera.com
+#hmmm probably should encrypt this
+docker_repo_password_hash: bW91c2VyYWRlcGxveTpDb29sQnJlZXplRGVza3RvcEZhbkZvclRoZVdpbg==
+newrelic_license: 120195efe1fef280df3e128b45eb8ea6f108ba25
+

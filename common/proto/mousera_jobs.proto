@@ -1,0 +1,34 @@
+/*
+
+*/
+
+message Job
+{
+    extensions 100 to max;
+
+    enum Type
+    {
+        CageReport = 1;
+        // Add additional Job types here
+    }
+
+    required Type type = 1;
+}
+
+
+message CageReport
+{
+    extend Job
+    {
+        optional CageReport job = 100;
+    }
+
+    optional int32 cage_id = 1;
+    optional string report_targets = 2;
+    optional string user_email = 3;
+    optional string start_time = 4;
+    optional string end_time = 5;
+    optional string aggregator = 6;
+    optional string sampling_unit = 7;
+    optional string sampling_value = 8;
+}

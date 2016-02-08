@@ -2,6 +2,7 @@
 from math import exp
 from common.utils import utime
 import thread
+from time import sleep
 
 
 class Controller():
@@ -10,6 +11,7 @@ class Controller():
         [time] [measured output] [control input]
         ...
     """
+
     def __init__(self, device, k, dt, init_ctrl=0):
         self.device = device
         self.k = k   # N.B. function of seconds since last setpoint
@@ -17,11 +19,13 @@ class Controller():
         self.control = init_ctrl
         self.running = False
         self.set(0)
+
     def set(self, setpoint):
         self.setpoint = setpoint
         self.t0 = utime.now()
+
     def start(self, logfile=('LOG_BLOWER_DATA_%d' % utime.now())):
-        def loop():
+        def loop(logfile):
             with open(logfile, 'a+', 0) as logfile:
                 while self.running:
                     t1 = utime.now()
@@ -31,7 +35,8 @@ class Controller():
                     t2 = utime.now()
                     sleep(max(0, self.dt - (t2 - t1)))
         self.running = True
-        thread.start_new_thread(loop, ())
+        thread.start_new_thread(loop, (logfile,))
+
     def stop(self):
         self.running = False
 
