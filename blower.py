@@ -4,7 +4,8 @@ from controller import Controller
 from math import *
 
 
-L = 0.015
+# L = 0.015
+L = 0.1
 K = lambda t: 1e-2 * exp(-L * t) + 1e-4
 DT = 0.1
 
