@@ -12,7 +12,9 @@ print '''
 For support, email sebastien@mousera.com
 
 Pre-calibration checklist:
-  [1] Blower exhaust (side of sensor assembly) is connected to rack supply
+  [1] Blower exhaust (side of sensor assembly) is connected to rack supply:
+        for RAT racks, BACK side
+        for MOUSE racks, FRONT side
   [2] Blower has power and switch is set to ON
   [3] Ethernet is plugged in
 
