@@ -2,8 +2,7 @@ from common.utils import utime
 from time import sleep
 
 FLOWS = [320, 290, 260, 230, 200, 170, 140, 120, 100, 80, 65, 50, 35, 20, 0]
-# TIMESTEP = 20 * utime.ONEMINUTE
-TIMESTEP = 5
+TIMESTEP = 20 * utime.ONEMINUTE
 
 print '''
 -------------------------
@@ -37,7 +36,7 @@ Estimated completion time is
 
 10 seconds to cancel (Ctrl+C)...''' % (rack_id, utime.to_string(t_start, 'America/Los_Angeles'), utime.to_string(t_end, 'America/Los_Angeles'))
 
-sleep(1)
+sleep(10)
 
 print "Proceeding.\n"
 
