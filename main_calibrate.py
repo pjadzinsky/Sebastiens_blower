@@ -36,7 +36,7 @@ Estimated completion time is
 
 10 seconds to cancel (Ctrl+C)...''' % (rack_id, utime.to_string(utime.now(), 'America/Los_Angeles'), utime.to_string(utime.now() + len(FLOWS) * 600., 'America/Los_Angeles'))
 
-sleep(10)
+sleep(1)
 
 print "Proceeding.\n"
 
@@ -48,19 +48,22 @@ print "Proceeding.\n"
 
 # Airflow measurements occur at _:_5 wall clock time (+/- 15 seconds)
 # So change airflows every 10 minutes at _:_7 + 20 seconds
-global t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
-global SIM_T = 62.
+t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
+SIM_T = 62.
 def t_wait():
+    global SIM_T
     wait = 600. - (SIM_T - t_offset) % 600.
+    print "simulated time is", SIM_T
     print "waiting", wait, "secs"
     SIM_T += wait
-    return 2
+    return 1
 
 print '''
 Synchronizing with rack...
 '''
 sleep(t_wait())
 
+t_start = utime.now()
 bdata_fname = 'LOG_BLOWER_DATA_R%d_%d' % (rack_id, t_start)
 bsettings_fname = 'LOG_BLOWER_SETTINGS_R%d_%d' % (rack_id, t_start)
 
@@ -73,18 +76,21 @@ try:
             t = utime.now()
             blower.set(flow)
             log.write('%f %f\n' % (t, flow))
-            sleep(t_wait() + (2. if i==0 else 0.))
+            sleep(t_wait() + (6. if i==0 else 0.))
 finally:
     blower.stop()
 
 print '''
 Uploading blower data...
 '''
-s3_bucket = boto.connect_s3().get_bucket(S3_BUCKET_NAME)
-with open(bdata_fname, 'r') as bdata:
-    s3_bucket.new_key(S3_PREFIX + bdata_fname).set_contents_from_string(bdata.read())
-with open(bsettings_fname, 'r') as bsettings:
-    s3_bucket.new_key(S3_PREFIX + bsettings_fname).set_contents_from_string(bsettings.read())
+try:
+    s3_bucket = boto.connect_s3().get_bucket(S3_BUCKET_NAME)
+    with open(bdata_fname, 'r') as bdata:
+        s3_bucket.new_key(S3_PREFIX + bdata_fname).set_contents_from_string(bdata.read())
+    with open(bsettings_fname, 'r') as bsettings:
+        s3_bucket.new_key(S3_PREFIX + bsettings_fname).set_contents_from_string(bsettings.read())
+except:
+    pass
 
 print '''
 Airflow calibration of RACK %d complete.
