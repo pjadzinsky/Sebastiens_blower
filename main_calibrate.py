@@ -79,11 +79,14 @@ finally:
 print '''
 Uploading blower data...
 '''
-s3_bucket = boto.connect_s3().get_bucket(S3_BUCKET_NAME)
-with open(bdata_fname, 'r') as bdata:
-    s3_bucket.new_key(S3_PREFIX + bdata_fname).set_contents_from_string(bdata.read())
-with open(bsettings_fname, 'r') as bsettings:
-    s3_bucket.new_key(S3_PREFIX + bsettings_fname).set_contents_from_string(bsettings.read())
+try:
+    s3_bucket = boto.connect_s3().get_bucket(S3_BUCKET_NAME)
+    with open(bdata_fname, 'r') as bdata:
+        s3_bucket.new_key(S3_PREFIX + bdata_fname).set_contents_from_string(bdata.read())
+    with open(bsettings_fname, 'r') as bsettings:
+        s3_bucket.new_key(S3_PREFIX + bsettings_fname).set_contents_from_string(bsettings.read())
+except:
+    pass
 
 print '''
 Airflow calibration of RACK %d complete.
