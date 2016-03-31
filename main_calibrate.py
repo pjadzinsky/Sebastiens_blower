@@ -4,7 +4,6 @@ from time import sleep
 import boto
 
 FLOWS = [320, 290, 260, 230, 200, 170, 140, 120, 100, 80, 65, 50, 35, 20, 0]
-TIMESTEP = 20 * utime.ONEMINUTE
 S3_BUCKET_NAME = 'mousera-us-west-2-production-calibration'
 S3_PREFIX = 'blower-logs/'
 
@@ -28,9 +27,6 @@ except ValueError:
     print "\nInvalid rack number. Exiting.\n"
     exit()
 
-t_start = utime.now()
-t_end = t_start + len(FLOWS) * TIMESTEP
-
 print '''
 STARTING airflow calibration for RACK %d.
 Current time is
@@ -38,7 +34,7 @@ Current time is
 Estimated completion time is
 \t%s.
 
-10 seconds to cancel (Ctrl+C)...''' % (rack_id, utime.to_string(t_start, 'America/Los_Angeles'), utime.to_string(t_end, 'America/Los_Angeles'))
+10 seconds to cancel (Ctrl+C)...''' % (rack_id, utime.to_string(utime.now(), 'America/Los_Angeles'), utime.to_string(utime.now() + len(FLOWS) * 600., 'America/Los_Angeles'))
 
 sleep(10)
 
@@ -51,14 +47,13 @@ print "Proceeding.\n"
 
 
 # Airflow measurements occur at _:_5 wall clock time (+/- 15 seconds)
-t_now = utime.now()
-t_delay = 600. - (t_now - 300.) % 600.
-t_start = t_now + t_delay
-t_end = t_start + len(FLOWS) * TIMESTEP
+# So change airflows every 10 minutes at _:_7 + 20 seconds
+t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
+
 print '''
-Synchronizing with rack (%d minutes)...
-''' % (t_delay/utime.ONEMINUTE,)
-sleep(t_delay)
+Synchronizing with rack...
+'''
+sleep(600. - (utime.now() - t_offset) % 600.)
 
 bdata_fname = 'LOG_BLOWER_DATA_R%d_%d' % (rack_id, t_start)
 bsettings_fname = 'LOG_BLOWER_SETTINGS_R%d_%d' % (rack_id, t_start)
@@ -72,7 +67,7 @@ try:
             t = utime.now()
             blower.set(flow)
             log.write('%f %f\n' % (t, flow))
-            sleep(TIMESTEP)
+            sleep(600. - (utime.now() - t_offset) % 600 + (600. if i==0 else 0.))
 finally:
     blower.stop()
 
