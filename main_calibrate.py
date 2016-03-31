@@ -50,6 +50,16 @@ print "Proceeding.\n"
 #
 
 
+# Airflow measurements occur at _:_5 wall clock time (+/- 15 seconds)
+t_now = utime.now()
+t_delay = 600. - (t_now - 300.) % 600.
+t_start = t_now + t_delay
+t_end = t_start + len(FLOWS) * TIMESTEP
+print '''
+Synchronizing with rack (%d minutes)...
+''' % (t_delay/utime.ONEMINUTE,)
+sleep(t_delay)
+
 bdata_fname = 'LOG_BLOWER_DATA_R%d_%d' % (rack_id, t_start)
 bsettings_fname = 'LOG_BLOWER_SETTINGS_R%d_%d' % (rack_id, t_start)
 
