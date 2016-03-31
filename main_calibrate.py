@@ -49,11 +49,13 @@ print "Proceeding.\n"
 # Airflow measurements occur at _:_5 wall clock time (+/- 15 seconds)
 # So change airflows every 10 minutes at _:_7 + 20 seconds
 t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
+def t_wait():
+    return 600. - (utime.now() - t_offset) % 600.
 
 print '''
 Synchronizing with rack...
 '''
-sleep(600. - (utime.now() - t_offset) % 600.)
+sleep(t_wait())
 
 bdata_fname = 'LOG_BLOWER_DATA_R%d_%d' % (rack_id, t_start)
 bsettings_fname = 'LOG_BLOWER_SETTINGS_R%d_%d' % (rack_id, t_start)
@@ -67,7 +69,7 @@ try:
             t = utime.now()
             blower.set(flow)
             log.write('%f %f\n' % (t, flow))
-            sleep(600. - (utime.now() - t_offset) % 600 + (600. if i==0 else 0.))
+            sleep(t_wait() + (600. if i==0 else 0.))
 finally:
     blower.stop()
 
