@@ -57,6 +57,7 @@ Synchronizing with rack...
 '''
 sleep(t_wait())
 
+t_start = utime.now()
 bdata_fname = 'LOG_BLOWER_DATA_R%d_%d' % (rack_id, t_start)
 bsettings_fname = 'LOG_BLOWER_SETTINGS_R%d_%d' % (rack_id, t_start)
 
