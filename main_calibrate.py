@@ -71,8 +71,10 @@ try:
             print "\tStep %d of %d: %f L/min" % (i+1, len(FLOWS), flow)
             t = utime.now()
             blower.set(flow)
+            if i==0:
+                sleep(600)
             log.write('%f %f\n' % (t, flow))
-            sleep(t_wait() + (600. if i==0 else 0.))
+            sleep(t_wait())
 finally:
     blower.stop()
 
