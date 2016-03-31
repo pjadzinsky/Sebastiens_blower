@@ -48,8 +48,8 @@ print "Proceeding.\n"
 
 # Airflow measurements occur at _:_5 wall clock time (+/- 15 seconds)
 # So change airflows every 10 minutes at _:_7 + 20 seconds
-t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
-SIM_T = 62
+global t_offset = 300. + 120. + 20.  # measurement time offset + measurement duration + margin
+global SIM_T = 62.
 def t_wait():
     wait = 600. - (SIM_T - t_offset) % 600.
     print "waiting", wait, "secs"
